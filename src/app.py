@@ -12,10 +12,11 @@ if 'settings' not in st.session_state:
     st.session_state['settings'] = load_settings()
 
 DEFAULT_COL_ORDER = [
-    "Ticker", "Name", "Overall Rank", "Themes", "Rank YTD%", "Rank 5D%", "Rank Turnover Ratio", "Rank 20d Vol",
-    "GICS Sector", "GICS Industry", "GICS Sub-Industry",
-    "Current Price", "Latest Turnover", "Avg Daily Turnover (20d)", "Turnover Ratio",
-    "YTD Performance (%)", "5-Day Performance (%)"
+    "Ticker", "Name", "Overall Rank", "YTD Performance (%)", "5-Day Performance (%)",
+    "Turnover Ratio", "Avg Daily Turnover (20d)", "Themes",
+    "GICS Sub-Industry", "GICS Industry", "GICS Sector",
+    "Rank YTD%", "Rank 5D%", "Rank Turnover Ratio", "Rank 20d Vol",
+    "Current Price", "Latest Turnover"
 ]
 
 if 'col_order' not in st.session_state:
