@@ -333,12 +333,9 @@ if not st.session_state['stock_data'].empty:
     if sel_subs:
         filtered_df = filtered_df[filtered_df['GICS Sub-Industry'].isin(sel_subs)]
 
-    # Performance Multipliers for display
-    # We do the unit conversion here ONLY if it wasn't done before
-    # To prevent double division on rerun, we check the magnitude
-    if filtered_df['Latest Turnover'].max() > 10_000: # Heuristic for raw values
-        filtered_df['Latest Turnover'] = filtered_df['Latest Turnover'] / 1_000_000
-        filtered_df['Avg Daily Turnover (20d)'] = filtered_df['Avg Daily Turnover (20d)'] / 1_000_000
+
+    # Turnover values are already converted to millions in get_monitor_data
+    # No conversion needed here
 
     # Sort
     filtered_df = filtered_df.sort_values(by="Overall Rank", ascending=True)
