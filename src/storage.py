@@ -94,6 +94,28 @@ def get_latest_date(df):
         return None
     return df['Date'].max()
 
+def get_available_snapshot_dates():
+    """
+    Get list of dates with sufficient market data for snapshot calculation.
+    Returns dates that have at least 20 days of prior data (for 20-day averages).
+    """
+    market_data = load_market_data()
+    if market_data.empty:
+        return []
+    
+    # Get all unique dates, sorted
+    all_dates = sorted(market_data['Date'].unique())
+    
+    # Only return dates that have at least 20 days of prior data
+    # This ensures we can calculate 20-day averages
+    valid_dates = []
+    for i, date in enumerate(all_dates):
+        if i >= 20:  # Need at least 20 prior days
+            valid_dates.append(date)
+    
+    # Return as list of strings in descending order (most recent first)
+    return [str(d) for d in reversed(valid_dates)]
+
 # --- Historical Snapshot Storage ---
 
 import sqlite3

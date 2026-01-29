@@ -156,28 +156,50 @@ def update_market_data(tickers):
     save_market_data(combined)
     return combined
 
-def get_monitor_data(force_refresh_metadata=False):
-    """Main entry point."""
+def get_monitor_data(force_refresh_metadata=False, as_of_date=None):
+    """
+    Main entry point. Calculates stock metrics.
+    
+    Args:
+        force_refresh_metadata: Force refresh of S&P 500 list
+        as_of_date: Calculate metrics as of this date (for historical view).
+                    If None, uses latest available data.
+    """
     metadata = update_metadata(force_refresh=force_refresh_metadata)
     tickers = metadata['Symbol'].tolist()
     market_data = update_market_data(tickers)
     
     if market_data.empty: return pd.DataFrame()
     
-    print("Calculating metrics...")
-    today = datetime.date.today()
-    start_of_year = datetime.date(today.year, 1, 1)
+    # Filter data up to as_of_date if specified
+    if as_of_date is not None:
+        if isinstance(as_of_date, str):
+            as_of_date = datetime.datetime.strptime(as_of_date, '%Y-%m-%d').date()
+        market_data = market_data[market_data['Date'] <= as_of_date]
+        if market_data.empty:
+            print(f"No data available for {as_of_date}")
+            return pd.DataFrame()
+        reference_date = as_of_date
+    else:
+        reference_date = datetime.date.today()
+    
+    print(f"Calculating metrics for {reference_date}...")
+    start_of_year = datetime.date(reference_date.year, 1, 1)
     
     results = []
     for ticker, group in market_data.groupby('Ticker'):
         try:
             group = group.sort_values('Date')
+            
+            # Use last 20 days of available data
             last_20 = group.tail(20)
             avg_turnover = last_20['Turnover'].mean() if len(last_20) >= 20 else 0
             
+            # YTD performance from start of year to reference date
             group_ytd = group[group['Date'] >= start_of_year]
-            ytd_perf = ((group_ytd.iloc[-1]['Close'] - group_ytd.iloc[0]['Close']) / group_ytd.iloc[0]['Close'] * 100) if not group_ytd.empty else None
+            ytd_perf = ((group_ytd.iloc[-1]['Close'] - group_ytd.iloc[0]['Close']) / group_ytd.iloc[0]['Close'] * 100) if len(group_ytd) >= 2 else None
             
+            # 5-day performance
             perf_5d = 0.0
             if len(group) >= 6:
                 perf_5d = ((group.iloc[-1]['Close'] - group.iloc[-6]['Close']) / group.iloc[-6]['Close'] * 100)

@@ -2,7 +2,7 @@
 import streamlit as st
 import pandas as pd
 from data import get_monitor_data
-from storage import load_metadata, save_metadata, load_settings, save_settings, save_daily_snapshot, get_available_dates, load_snapshot_by_date
+from storage import load_metadata, save_metadata, load_settings, save_settings, get_available_snapshot_dates
 from datetime import datetime
 
 st.set_page_config(page_title="US Stock Monitor", layout="wide", initial_sidebar_state="collapsed")
@@ -36,7 +36,7 @@ with st.sidebar:
     mode = st.radio("Select Mode:", ["Live Scan", "Historical View"], index=0)
     
     if mode == "Historical View":
-        available_dates = get_available_dates()
+        available_dates = get_available_snapshot_dates()
         if available_dates:
             selected_date = st.selectbox("Select Date:", available_dates)
             if st.button("Load Snapshot"):
@@ -44,7 +44,7 @@ with st.sidebar:
                 st.session_state['selected_date'] = selected_date
                 st.rerun()
         else:
-            st.info("No historical snapshots available yet. Run a scan first!")
+            st.info("No historical data available yet. Run a scan first!")
     else:
         if 'historical_mode' in st.session_state:
             del st.session_state['historical_mode']
@@ -86,18 +86,24 @@ if st.session_state.get('historical_mode', False):
             need_reload = True
         
         if need_reload:
-            with st.spinner(f"Loading snapshot for {st.session_state['selected_date']}..."):
-                df = load_snapshot_by_date(st.session_state['selected_date'])
+            with st.spinner(f"Calculating snapshot for {st.session_state['selected_date']}..."):
+                # Calculate metrics on-demand for the selected date
+                df = get_monitor_data(force_refresh_metadata=False, as_of_date=st.session_state['selected_date'])
                 if not df.empty:
+                    # Apply current column order
+                    _cols = [c for c in st.session_state['col_order'] if c in df.columns]
+                    _other = [c for c in df.columns if c not in _cols]
+                    df = df[_cols + _other]
+                    
                     st.session_state['stock_data'] = df
                     st.session_state['edited_data'] = df.copy()
                     st.session_state['loaded_snapshot_date'] = st.session_state['selected_date']
                 else:
-                st.warning(f"No data found for {st.session_state['selected_date']}. Please select another date or run a live scan.")
-                # Reset historical mode if data not found to prevent infinite loop
-                del st.session_state['historical_mode']
-                del st.session_state['selected_date']
-                st.rerun()
+                    st.warning(f"No data found for {st.session_state['selected_date']}. Please select another date or run a live scan.")
+                    # Reset historical mode if data not found to prevent infinite loop
+                    del st.session_state['historical_mode']
+                    del st.session_state['selected_date']
+                    st.rerun()
 
 if run_btn:
     with st.spinner("Fetching/Updating market data..."):
@@ -110,11 +116,7 @@ if run_btn:
         
         st.session_state['stock_data'] = df
         st.session_state['edited_data'] = df.copy()
-        
-        # Auto-save snapshot
-        if not df.empty:
-            save_daily_snapshot(df)
-            st.success(f"✅ Snapshot saved for {datetime.now().date()}")
+        st.success(f"✅ Data updated successfully! ({len(df)} stocks)")
 
 if not st.session_state['stock_data'].empty:
     # Use the session_state for display and editing
