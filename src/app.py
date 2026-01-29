@@ -76,13 +76,23 @@ if 'edited_data' not in st.session_state:
 
 # Load historical data if in historical mode
 if st.session_state.get('historical_mode', False):
-    if 'selected_date' in st.session_state and st.session_state['stock_data'].empty: # Only load if not already loaded
-        with st.spinner(f"Loading snapshot for {st.session_state['selected_date']}..."):
-            df = load_snapshot_by_date(st.session_state['selected_date'])
-            if not df.empty:
-                st.session_state['stock_data'] = df
-                st.session_state['edited_data'] = df.copy()
-            else:
+    # Check if we need to load/reload data
+    need_reload = False
+    if 'selected_date' in st.session_state:
+        # Reload if stock_data is empty OR if the selected date has changed
+        if st.session_state['stock_data'].empty:
+            need_reload = True
+        elif 'loaded_snapshot_date' not in st.session_state or st.session_state['loaded_snapshot_date'] != st.session_state['selected_date']:
+            need_reload = True
+        
+        if need_reload:
+            with st.spinner(f"Loading snapshot for {st.session_state['selected_date']}..."):
+                df = load_snapshot_by_date(st.session_state['selected_date'])
+                if not df.empty:
+                    st.session_state['stock_data'] = df
+                    st.session_state['edited_data'] = df.copy()
+                    st.session_state['loaded_snapshot_date'] = st.session_state['selected_date']
+                else:
                 st.warning(f"No data found for {st.session_state['selected_date']}. Please select another date or run a live scan.")
                 # Reset historical mode if data not found to prevent infinite loop
                 del st.session_state['historical_mode']
