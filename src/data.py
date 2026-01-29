@@ -197,7 +197,21 @@ def get_monitor_data(force_refresh_metadata=False, as_of_date=None):
             
             # YTD performance from start of year to reference date
             group_ytd = group[group['Date'] >= start_of_year]
-            ytd_perf = ((group_ytd.iloc[-1]['Close'] - group_ytd.iloc[0]['Close']) / group_ytd.iloc[0]['Close'] * 100) if len(group_ytd) >= 2 else None
+            
+            # Handle early year dates when Jan 1 might be a holiday
+            if len(group_ytd) >= 2:
+                # Normal case: at least 2 data points in current year
+                ytd_perf = ((group_ytd.iloc[-1]['Close'] - group_ytd.iloc[0]['Close']) / group_ytd.iloc[0]['Close'] * 100)
+            elif len(group_ytd) == 1:
+                # Edge case: Only 1 data point in current year (e.g., Jan 2 when Jan 1 is holiday)
+                # Use last trading day of previous year as baseline
+                prev_year_data = group[group['Date'] < start_of_year]
+                if not prev_year_data.empty:
+                    ytd_perf = ((group_ytd.iloc[-1]['Close'] - prev_year_data.iloc[-1]['Close']) / prev_year_data.iloc[-1]['Close'] * 100)
+                else:
+                    ytd_perf = None
+            else:
+                ytd_perf = None
             
             # 5-day performance
             perf_5d = 0.0
