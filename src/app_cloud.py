@@ -39,16 +39,33 @@ if 'edited_data' not in st.session_state:
 
 if run_btn:
     with st.spinner("🔄 Fetching market data... This may take 1-2 minutes."):
-        df = get_monitor_data(force_refresh_metadata=False)
-        
-        # Apply current column order if available
-        _cols = [c for c in st.session_state['col_order'] if c in df.columns]
-        _other = [c for c in df.columns if c not in _cols]
-        df = df[_cols + _other]
-        
-        st.session_state['stock_data'] = df
-        st.session_state['edited_data'] = df.copy()
-        st.success(f"✅ Scan complete! Found {len(df)} stocks.")
+        try:
+            df = get_monitor_data(force_refresh_metadata=False)
+            
+            # Apply current column order if available
+            _cols = [c for c in st.session_state['col_order'] if c in df.columns]
+            _other = [c for c in df.columns if c not in _cols]
+            df = df[_cols + _other]
+            
+            st.session_state['stock_data'] = df
+            st.session_state['edited_data'] = df.copy()
+            st.success(f"✅ Scan complete! Found {len(df)} stocks.")
+        except Exception as e:
+            st.error(f"❌ Error fetching data: {str(e)}")
+            st.info("💡 This might be the first run. The app will fetch fresh data from Yahoo Finance (this takes 2-3 minutes).")
+            # Try with force refresh
+            try:
+                df = get_monitor_data(force_refresh_metadata=True)
+                _cols = [c for c in st.session_state['col_order'] if c in df.columns]
+                _other = [c for c in df.columns if c not in _cols]
+                df = df[_cols + _other]
+                st.session_state['stock_data'] = df
+                st.session_state['edited_data'] = df.copy()
+                st.success(f"✅ Scan complete! Found {len(df)} stocks.")
+            except Exception as e2:
+                st.error(f"❌ Failed to fetch data: {str(e2)}")
+                st.stop()
+
 
 if not st.session_state['stock_data'].empty:
     # Use the session_state for display and editing
