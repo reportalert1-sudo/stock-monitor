@@ -19,7 +19,13 @@ DEFAULT_COL_ORDER = [
     "Current Price", "Latest Turnover"
 ]
 
-if 'col_order' not in st.session_state:
+# Version tracking for column order updates
+COL_ORDER_VERSION = 2  # Increment this when DEFAULT_COL_ORDER changes
+
+if 'col_order_version' not in st.session_state or st.session_state.get('col_order_version', 0) < COL_ORDER_VERSION:
+    st.session_state['col_order'] = DEFAULT_COL_ORDER.copy()
+    st.session_state['col_order_version'] = COL_ORDER_VERSION
+elif 'col_order' not in st.session_state:
     st.session_state['col_order'] = st.session_state['settings'].get('column_order', DEFAULT_COL_ORDER)
 
 st.title("US Stock Monitor")
