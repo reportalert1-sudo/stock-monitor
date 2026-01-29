@@ -203,10 +203,6 @@ def get_monitor_data(force_refresh_metadata=False):
     df_res = pd.DataFrame(results)
     if df_res.empty: return df_res
     
-    # Convert turnover values to millions for display
-    df_res['Avg Daily Turnover (20d)'] = df_res['Avg Daily Turnover (20d)'] / 1_000_000
-    df_res['Latest Turnover'] = df_res['Latest Turnover'] / 1_000_000
-    
     # Calculate Ranks (1 is best)
     df_res['Rank YTD%'] = df_res['YTD Performance (%)'].rank(ascending=False, method='min')
     df_res['Rank 5D%'] = df_res['5-Day Performance (%)'].rank(ascending=False, method='min')

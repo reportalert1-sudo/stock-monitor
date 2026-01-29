@@ -334,8 +334,11 @@ if not st.session_state['stock_data'].empty:
         filtered_df = filtered_df[filtered_df['GICS Sub-Industry'].isin(sel_subs)]
 
 
-    # Turnover values are already converted to millions in get_monitor_data
-    # No conversion needed here
+    # Convert turnover to millions for display
+    # Make a copy to avoid modifying the original session state data
+    filtered_df = filtered_df.copy()
+    filtered_df['Latest Turnover'] = filtered_df['Latest Turnover'] / 1_000_000
+    filtered_df['Avg Daily Turnover (20d)'] = filtered_df['Avg Daily Turnover (20d)'] / 1_000_000
 
     # Sort
     filtered_df = filtered_df.sort_values(by="Overall Rank", ascending=True)
